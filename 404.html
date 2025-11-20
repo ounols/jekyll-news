@@ -1,0 +1,47 @@
+---
+layout: default
+title: 404 - Page Not Found
+---
+
+<div class="error-page">
+  <div class="container">
+    <div class="error-content">
+      <h1 class="error-title">404</h1>
+      <h2 class="error-subtitle">Page Not Found</h2>
+      <p class="error-message">The page you're looking for doesn't exist.</p>
+      <a href="{{ '/' | relative_url }}" class="btn btn-primary">Go Home</a>
+    </div>
+  </div>
+</div>
+
+<style>
+.error-page {
+  padding: calc(var(--spacing-unit) * 8) 0;
+  text-align: center;
+}
+
+.error-content {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.error-title {
+  font-size: 8rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: var(--spacing-unit);
+  color: var(--text-light);
+}
+
+.error-subtitle {
+  font-size: 2rem;
+  margin-bottom: var(--spacing-unit);
+}
+
+.error-message {
+  font-size: 1.25rem;
+  color: var(--text-light);
+  margin-bottom: calc(var(--spacing-unit) * 2);
+}
+</style>
+

@@ -1,0 +1,137 @@
+---
+layout: default
+---
+
+<!-- begin hero -->
+<section class="hero">
+  <div class="container">
+    <div class="row">
+      <div class="col col-12">
+        <div class="hero__inner">
+          <h1 class="hero__title">{{ site.description | default: "Thoughts, stories and ideas." }}</h1>
+          <p class="hero__description">소식을 제공하는 사이트는 많지만, 한 곳에서 모든 소식을 확인하기 어렵습니다. 이 사이트를 통해 소식을 한 곳에서 확인할 수 있습니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- end hero -->
+
+<!-- begin featured-post -->
+<section class="section featured-post animate">
+  <div class="container">
+    <div class="row">
+      {% for post in site.posts limit: 7 %}
+      {% if forloop.first %}
+      <div class="article col col-12 article--first">
+        {% include post-card.html post=post %}
+      </div>
+      {% else %}
+      <div class="article col col-4 col-d-6 col-t-12">
+        {% include post-card.html post=post %}
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+<!-- end featured-post -->
+
+<!-- begin blog -->
+<section class="section blog animate">
+  <div class="container">
+    <div class="row">
+      <div class="col col-12">
+        <div class="section__inner">
+          <div class="section__info">
+            <div class="section__head">
+              <h2 class="section__title">Latest</h2>
+              <div class="category-tabs">
+                <div class="category-tabs__list">
+                  <button class="category-tabs__item active" data-category="all">All</button>
+                  {% for category in site.main_categories %}
+                  <button class="category-tabs__item" data-category="{{ category | downcase }}">{{ category }}</button>
+                  {% endfor %}
+                </div>
+              </div>
+              <a class="section__link" href="{{ '/blog' | relative_url }}">See all posts<i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+          </div>
+
+          <!-- Posts Container -->
+          <div class="category-posts-container">
+            <!-- All Posts (Default) -->
+            <div class="category-posts active" data-category="all">
+              <div class="row">
+                {% assign all_posts = site.posts %}
+                {% assign post_count = 0 %}
+                {% for post in all_posts %}
+                  {% if forloop.index > 7 and post_count < 6 %}
+                    {% assign post_count = post_count | plus: 1 %}
+                    <div class="article col col-4 col-d-6 col-t-12">
+                      {% include post-card.html post=post %}
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Category Posts -->
+            {% for category in site.main_categories %}
+            <div class="category-posts" data-category="{{ category | downcase }}">
+              <div class="row">
+                {% assign category_posts = site.posts | where_exp: "post", "post.categories contains category" | limit: 6 %}
+                {% if category_posts.size == 0 %}
+                  {% assign category_lower = category | downcase %}
+                  {% assign category_posts = site.posts | where_exp: "post", "post.categories contains category_lower" | limit: 6 %}
+                {% endif %}
+                {% if category_posts.size > 0 %}
+                  {% for post in category_posts %}
+                    <div class="article col col-4 col-d-6 col-t-12">
+                      {% include post-card.html post=post %}
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <div class="col col-12">
+                    <p class="no-posts-message">No articles found in this category.</p>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- end blog -->
+
+<!-- begin videos -->
+<!--
+<section class="section videos animate">
+  <div class="container">
+    <div class="row">
+      <div class="col col-12">
+        <div class="section__inner">
+          <div class="section__info">
+            <div class="section__head">
+              <h2 class="section__title">Latest Videos</h2>
+              <a class="section__link" href="{{ '/videos' | relative_url }}">More videos<i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+          </div>
+
+          <div class="row">
+            {% for video in site.videos limit: 3 %}
+            <div class="article col col-4 col-d-6 col-t-12">
+              {% include video-card.html video=video %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+-->
+<!-- end videos -->

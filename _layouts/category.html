@@ -1,0 +1,67 @@
+---
+layout: default
+---
+
+<!-- begin hero -->
+<section class="hero">
+  <div class="container">
+    <div class="row">
+      <div class="col col-12">
+        <div class="hero__inner">
+          <h1 class="hero__title">{{ page.hero_title | default: page.title }}</h1>
+          <p class="hero__description">{{ page.hero_description }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- end hero -->
+
+<div class="container animate">
+  <div class="row">
+    {% for post in paginator.posts %}
+      <div class="article col col-4 col-d-6 col-t-12">
+        {% include post-card.html post=post %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- begin pagination -->
+{% if paginator.total_pages > 1 %}
+<div class="container">
+  <div class="row">
+    <div class="col col-12">
+      <nav class="pagination animate">
+        <div class="pagination__list">
+          {% if paginator.previous_page %}
+            <a class="previous-link" href="{{ paginator.previous_page_path | relative_url }}">«</a>
+          {% else %}
+            <span class="disabled">«</span>
+          {% endif %}
+
+          <div class="counter-box">
+            {% for page_num in (1..paginator.total_pages) %}
+              {% if page_num == paginator.page %}
+                <span class="active-link">{{ page_num }}</span>
+              {% elsif page_num == 1 %}
+                <a class="count-number" href="{{ page.category_path | default: page.permalink | relative_url }}">{{ page_num }}</a>
+              {% else %}
+                <a class="count-number" href="{{ page.category_path | default: page.permalink | append: 'page' | append: page_num | append: '/' | relative_url }}">{{ page_num }}</a>
+              {% endif %}
+            {% endfor %}
+          </div>
+
+          {% if paginator.next_page %}
+            <a class="next-link" href="{{ paginator.next_page_path | relative_url }}">»</a>
+          {% else %}
+            <span class="disabled">»</span>
+          {% endif %}
+        </div>
+      </nav>
+    </div>
+  </div>
+</div>
+{% endif %}
+<!-- end pagination -->
+

@@ -1,0 +1,48 @@
+<div class="article__inner">
+  {% if include.video.image %}
+  <div class="article__head">
+    <a href="{{ include.video.url | relative_url }}" class="article__image" aria-hidden="true" tabindex="-1">
+      <img alt="{{ include.video.title }}" src="{{ include.video.image | relative_url }}">
+      <div class="video-icon">
+        <svg width="68" height="68" viewBox="0 0 68 68" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M25 20L45 34L25 48V20Z" fill="currentColor"/>
+        </svg>
+      </div>
+    </a>
+  </div>
+  {% endif %}
+
+  <div class="article__content">
+    {% if include.video.categories %}
+    <div class="article__tags">
+      {% for category in include.video.categories %}
+      <a href="{{ '/tags/?tag=' | append: category | relative_url }}" class="article__tag tag-color-js">{{ category }}</a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <h2 class="article__title">
+      <a href="{{ include.video.url | relative_url }}">{{ include.video.title }}</a>
+    </h2>
+
+    <p class="article__excerpt">{{ include.video.excerpt | default: include.video.content | strip_html | truncatewords: 15 }}</p>
+
+    <div class="article__meta">
+      {% assign video_author = site.authors | where: "name", include.video.author | first %}
+      {% if video_author %}
+      <a href="{{ video_author.url | relative_url }}" class="article__author__image">
+        <img alt="{{ include.video.author }}" src="{{ video_author.image | default: '/assets/images/authors/default.jpg' | relative_url }}">
+      </a>
+      {% endif %}
+
+      <div class="article__meta__bottom">
+        {% if include.video.author %}
+        <a class="article__author__name" href="{% if video_author %}{{ video_author.url | relative_url }}{% else %}#{% endif %}">{{ include.video.author }}</a>
+        {% endif %}
+        <time class="article__date" datetime="{{ include.video.date | date: '%Y-%m-%d' }}">{{ include.video.date | date: "%d %b %Y" }}</time>
+      </div>
+    </div>
+
+  </div>
+</div>
+

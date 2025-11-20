@@ -1,0 +1,40 @@
+<div class="recent-posts">
+  {% if include.post.image %}
+  <a class="recent-posts__image" href="{{ include.post.url | relative_url }}">
+    <img alt="{{ include.post.title }}" src="{{ include.post.image | relative_url }}">
+  </a>
+  {% endif %}
+  
+  <div class="recent-posts__content">
+    {% if include.post.categories %}
+    <div class="article__meta">
+      <div class="article__tags">
+        {% for category in include.post.categories %}
+        <a href="{{ '/tags/?tag=' | append: category | relative_url }}" class="article__tag tag-color-js">{{ category }}</a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    
+    <h4 class="recent-posts__title">
+      <a href="{{ include.post.url | relative_url }}">{{ include.post.title }}</a>
+    </h4>
+    
+    <div class="article__meta">
+      {% assign post_author = site.authors | where: "name", include.post.author | first %}
+      {% if post_author %}
+      <a href="{{ post_author.url | relative_url }}" class="article__author__image">
+        <img alt="{{ include.post.author }}" src="{{ post_author.image | default: '/assets/images/authors/default.jpg' | relative_url }}">
+      </a>
+      {% endif %}
+
+      <div class="article__meta__bottom">
+        {% if include.post.author %}
+        <a class="article__author__name" href="{% if post_author %}{{ post_author.url | relative_url }}{% else %}#{% endif %}">{{ include.post.author }}</a>
+        {% endif %}
+        <time class="article__date" datetime="{{ include.post.date | date: '%Y-%m-%d' }}">{{ include.post.date | date: "%d %b %Y" }}</time>
+      </div>
+    </div>
+  </div>
+</div>
+

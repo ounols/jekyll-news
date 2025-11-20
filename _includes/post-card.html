@@ -1,0 +1,32 @@
+<div class="article__inner{% if include.post.image %} article__inner--has-image{% endif %}"{% if include.post.image %} style="--bg-image: url('{{ include.post.image | relative_url }}');"{% endif %}>
+  <div class="article__head">
+    {% if include.post.image %}
+    <a href="{{ include.post.url | relative_url }}" class="article__image article__image--background" aria-hidden="true" tabindex="-1">
+    </a>
+    {% endif %}
+  </div>
+
+  <div class="article__content">
+    {% if include.post.categories %}
+    <div class="article__tags">
+      {% for category in include.post.categories %}
+      <a href="{{ '/tags/?tag=' | append: category | relative_url }}" class="article__tag tag-color-js">{{ category }}</a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <h2 class="article__title">
+      <a href="{{ include.post.url | relative_url }}">{{ include.post.title }}</a>
+    </h2>
+
+    <p class="article__excerpt">{{ include.post.excerpt | default: include.post.content | strip_html | truncatewords: 15 }}</p>
+
+    <div class="article__meta">
+      <div class="article__meta__bottom">
+        <time class="article__date" datetime="{{ include.post.date | date: '%Y-%m-%d' }}">{{ include.post.date | date: "%d %b %Y" }}</time>
+      </div>
+    </div>
+
+  </div>
+</div>
+

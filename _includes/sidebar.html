@@ -1,0 +1,31 @@
+<aside class="sidebar">
+  <div class="sidebar-widget">
+    <h3 class="widget-title">Get interesting news</h3>
+    <p class="widget-description">Subscribe to our newsletter and we'll send you the emails of latest posts.</p>
+    <form class="newsletter-form" action="#" method="post">
+      <input type="email" name="email" placeholder="Email address" class="newsletter-input" required>
+      <button type="submit" class="newsletter-submit">Subscribe</button>
+    </form>
+  </div>
+  
+  <div class="sidebar-widget">
+    <h3 class="widget-title">{{ site.title }}</h3>
+    <p class="widget-description">{{ site.description }}</p>
+  </div>
+  
+  <div class="sidebar-widget">
+    <h3 class="widget-title">Recent posts</h3>
+    <ul class="widget-posts">
+      {% for post in site.posts limit: 3 %}
+      <li>
+        <a href="{{ post.url | relative_url }}">
+          <span class="post-category">{{ post.categories | first }}</span>
+          <h4>{{ post.title }}</h4>
+          <span class="post-meta">{{ post.author }} {{ post.date | date: "%d %b %Y" }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</aside>
+

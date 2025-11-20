@@ -1,0 +1,44 @@
+---
+layout: default
+title: Authors
+---
+
+<div class="authors-page">
+  <div class="container">
+    <header class="page-header">
+      <h1 class="page-title">Authors</h1>
+    </header>
+    
+    <div class="row">
+      {% for author in site.authors %}
+      <div class="col-md-6 col-lg-4">
+        <div class="author-card">
+          {% if author.image %}
+          <div class="author-image">
+            <img src="{{ author.image | relative_url }}" alt="{{ author.name }}">
+          </div>
+          {% endif %}
+          <div class="author-content">
+            <h2 class="author-name">{{ author.name }}</h2>
+            {% if author.bio %}
+            <p class="author-bio">{{ author.bio }}</p>
+            {% endif %}
+            {% if author.social %}
+            <div class="author-social">
+              {% if author.social.twitter %}
+              <a href="{{ author.social.twitter }}" target="_blank">Twitter</a>
+              {% endif %}
+              {% if author.social.instagram %}
+              <a href="{{ author.social.instagram }}" target="_blank">Instagram</a>
+              {% endif %}
+            </div>
+            {% endif %}
+            <a href="{{ author.url | relative_url }}" class="btn btn-primary">View Posts</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+

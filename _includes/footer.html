@@ -1,0 +1,146 @@
+<!-- begin subscribe -->
+<div class="subscribe animate">
+  <div class="container">
+    <div class="row">
+      <div class="col col-12">
+        <div class="subscribe__inner">
+          <div class="subscribe__content">
+            <h3 class="subscribe__title">Get interesting news</h3>
+            <p class="subscribe__description">Subscribe to our newsletter and we'll send you the emails of latest posts.</p>
+          </div>
+          <form class="subscribe-form validate" action="#" method="POST" id="membedded-subscribe-form" name="membedded-subscribe-form" target="_blank" novalidate="">
+            <label class="screen-reader-text" for="mce-EMAIL">Email address</label>
+            <input class="subscribe-email required email" id="mce-EMAIL" type="text" name="EMAIL" placeholder="Your email address">
+            <button class="button button--primary button--big subscribe-button" id="membedded-subscribe" type="submit" name="subscribe">Subscribe</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="subscribe__bg" style="background-image: url('/images/subscribe-bg.jpg');"></div>
+  
+</div>
+<!-- end subscribe -->
+
+<!-- begin footer -->
+<footer class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col col-12">
+
+        <div class="footer__inner">
+          <div class="row">
+            <div class="col col-4 col-d-12">
+              <div class="widget-footer widget-info">
+                <h3 class="widget-info__title">{{ site.title }}</h3>
+                <p class="widget-info__desc">{{ site.description }}</p>
+
+                {% if site.social %}
+                <div class="social">
+                  <ul class="social__list list-reset">
+                    {% if site.social.twitter %}
+                    <li class="social__item">
+                      <a class="social__link" href="{{ site.social.twitter }}" target="_blank" rel="noopener" aria-label="Twitter link"><i class="fa-brands fa-x-twitter"></i></a>
+                    </li>
+                    {% endif %}
+                    {% if site.social.facebook %}
+                    <li class="social__item">
+                      <a class="social__link" href="{{ site.social.facebook }}" target="_blank" rel="noopener" aria-label="Facebook link"><i class="fa-brands fa-facebook"></i></a>
+                    </li>
+                    {% endif %}
+                    {% if site.social.instagram %}
+                    <li class="social__item">
+                      <a class="social__link" href="{{ site.social.instagram }}" target="_blank" rel="noopener" aria-label="Instagram link"><i class="fa-brands fa-instagram"></i></a>
+                    </li>
+                    {% endif %}
+                    {% if site.social.github %}
+                    <li class="social__item">
+                      <a class="social__link" href="{{ site.social.github }}" target="_blank" rel="noopener" aria-label="GitHub link"><i class="fa-brands fa-github"></i></a>
+                    </li>
+                    {% endif %}
+                  </ul>
+                </div>
+                {% endif %}
+
+              </div>
+            </div>
+
+            <div class="col col-6 col-d-12">
+              <div class="widget-footer widget-recent-posts">
+                <h3 class="widget-recent-posts__title">Recent posts</h3>
+                
+                {% for post in site.posts limit: 2 %}
+                <div class="recent-posts">
+                  {% if post.image %}
+                  <a class="recent-posts__image" href="{{ post.url | relative_url }}"><img alt="{{ post.title }}" src="{{ post.image | relative_url }}"></a>
+                  {% endif %}
+                  <div class="recent-posts__content">
+                    <div class="article__meta">
+                      {% if post.categories %}
+                      <div class="article__tags">
+                        {% for category in post.categories %}
+                        <a href="{{ '/tags/?tag=' | append: category | relative_url }}" class="article__tag tag-color-js">{{ category }}</a>
+                        {% endfor %}
+                      </div>
+                      {% endif %}
+                    </div>
+                    <h4 class="recent-posts__title"><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h4>
+                    <div class="article__meta">
+                      {% assign post_author = site.authors | where: "name", post.author | first %}
+                      {% if post_author %}
+                      <a href="{{ post_author.url | relative_url }}" class="article__author__image">
+                        <img alt="{{ post.author }}" src="{{ post_author.image | default: '/assets/images/authors/default.jpg' | relative_url }}">
+                      </a>
+                      {% endif %}
+                      <div class="article__meta__bottom">
+                        {% if post.author %}
+                        <a class="article__author__name" href="{% if post_author %}{{ post_author.url | relative_url }}{% else %}#{% endif %}">{{ post.author }}</a>
+                        {% endif %}
+                        <time class="article__date" datetime="{{ post.date | date: '%Y-%m-%d' }}">{{ post.date | date: "%d %b %Y" }}</time>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+                
+              </div>
+            </div>
+
+            <div class="col col-2 col-d-12">
+              <div class="widget-footer widget-nav">
+                <h3 class="widget-nav__title">Menu</h3>
+                <ul class="widget-nav__list list-reset">
+                  {% for item in site.navigation %}
+                  {% if item.children %}
+                  {% for child in item.children %}
+                  <li class="widget-nav__item">
+                    <a href="{{ child.url | relative_url }}" class="widget-nav__link">{{ child.title }}</a>
+                  </li>
+                  {% endfor %}
+                  {% else %}
+                  <li class="widget-nav__item">
+                    <a href="{{ item.url | relative_url }}" class="widget-nav__link">{{ item.title }}</a>
+                  </li>
+                  {% endif %}
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="footer__info">
+          <div class="footer__info-box">
+            <div class="copyright">{{ 'now' | date: "%Y" }} © <a href="{{ '/' | relative_url }}">{{ site.title }}</a>. Crafted & Designed by <a href="https://jekyllthemes.io/developers/artem-sheludko">Artem Sheludko</a>.</div>
+            <div class="top" title="Top"><i class="fa-solid fa-arrow-up"></i></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</footer>
+<!-- end footer -->
+

@@ -1,0 +1,93 @@
+# Site Settings
+title: '@News'
+description: "최신 뉴스를 제공합니다."
+baseurl: ""
+url: "https://news.ounols.kr"
+email: ""
+author: "ounols"
+lang: "ko"
+
+# Build Settings
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    block:
+      line_numbers: false
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+  - jekyll-paginate-v2
+
+# Theme Settings
+theme_color: "#000000"
+logo: "/assets/images/logo.png"
+
+# Navigation
+navigation:
+  - title: Home
+    url: /
+  - title: World
+    url: /world
+  - title: Business
+    url: /business
+  - title: Tech
+    url: /tech
+  - title: Gaming
+    url: /gaming
+  - title: For Dev
+    url: /for-dev
+  - title: Pages
+    children:
+      - title: About
+        url: /about
+      - title: Contact
+        url: /contact
+      - title: Elements
+        url: /elements
+
+# Main Categories
+main_categories:
+  - World
+  - Business
+  - Tech
+  - Gaming
+  - For Dev
+
+# Social Links
+social:
+  twitter: ""
+  facebook: ""
+  instagram: ""
+  github: ""
+
+# Pagination
+pagination:
+  enabled: true
+  sort_field: 'date'
+  sort_reverse: true
+
+# Collections
+collections:
+  authors:
+    output: true
+  videos:
+    output: true
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+      author: "Alena Curtis"
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "page"
+
