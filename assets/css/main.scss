@@ -1,6 +1,8 @@
 ---
 ---
 
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+
 /*!------------------------------------------------------------------
 [MAIN STYLESHEET]
 -------------------------------------------------------------------*/
@@ -60,13 +62,13 @@ $global-transition: all .25s;
 $base-font-size: 18px;
 $base-font-style: normal;
 $base-font-variant: normal;
-$base-font-weight: normal;
-$base-font-family: 'Noto Sans Display', Helvetica Neue, Helvetica, Arial, sans-serif;
+$base-font-weight: 400;
+$base-font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
 $base-line-height: 1.7;
 
 // Headings
-$heading-font-weight: 700;
-$heading-font-family: 'Noto Serif', 'Times New Roman', Georgia, serif;
+$heading-font-weight: 700; // Pretendard Variable supports 45-900
+$heading-font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
 
 $font-size-h1:  36px;
 $font-size-h2:  28px;
@@ -10140,7 +10142,7 @@ table td {
 }
 
 .hero__inner {
-  max-width: 860px;
+  max-width: 100%;
   margin: 0 auto;
   text-align: center;
 }
@@ -10165,7 +10167,7 @@ table td {
 
 .hero__description {
   margin: 0 auto;
-  max-width: 620px;
+  max-width: 100%;
   font-size: 21px;
   color: var(--text-alt-color);
 
@@ -10321,6 +10323,7 @@ table td {
     display: flex;
     flex-direction: column;
     height: 100%;
+    width: 100%;
     flex-grow: 1;
   }
 
@@ -11825,12 +11828,18 @@ table td {
 
   .article__head {
     margin-right: 32px;
+    flex-shrink: 0;
   }
 
   .article__image {
     width: 270px;
     margin-bottom: 0;
     padding-bottom: 100%;
+  }
+
+  .article__content {
+    flex: 1;
+    min-width: 0;
   }
 
   .article__title {
