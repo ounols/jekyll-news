@@ -62,40 +62,63 @@ class InvestingCompleteKR:
             return {}
         
     def extract_bearer_token(self):
-        """Bearer 토큰 추출"""
+        """Bearer 토큰 추출 (개선된 버전)"""
         try:
             print("[INFO] Bearer 토큰 추출 중...")
             response = self.scraper.get(f"{self.base_url}/news/latest-news", timeout=30)
-            
+
+            # 방법 1: __NEXT_DATA__에서 accessToken 추출 (가장 확실한 방법)
+            soup = BeautifulSoup(response.text, 'lxml')
+            next_data = soup.find('script', {'id': '__NEXT_DATA__'})
+
+            if next_data:
+                try:
+                    import json
+                    data = json.loads(next_data.string)
+
+                    # props.pageProps.accessToken 경로로 접근
+                    access_token = data.get('props', {}).get('pageProps', {}).get('accessToken')
+
+                    if access_token and len(access_token) > 100 and '.' in access_token:
+                        print(f"[OK] __NEXT_DATA__에서 JWT 토큰 발견 (길이: {len(access_token)})")
+                        return access_token
+                except Exception as e:
+                    print(f"[WARNING] __NEXT_DATA__ 파싱 실패: {e}")
+
+            # 방법 2: Regex 패턴 사용 (Fallback)
+            print("[INFO] Regex 패턴으로 시도 중...")
+
             patterns = [
+                r'"accessToken"\s*:\s*"([^"]+)"',
+                r'eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+',
+                r'"token"\s*:\s*"(eyJ[^"]+)"',
                 r'Bearer\s+([A-Za-z0-9\-_\.]+)',
-                r'"token"\s*:\s*"([^"]+)"',
                 r'token["\']?\s*[:=]\s*["\']([A-Za-z0-9\-_\.]+)',
             ]
-            
+
             all_tokens = []
             for pattern in patterns:
                 matches = re.findall(pattern, response.text, re.IGNORECASE)
                 all_tokens.extend(matches)
-            
-            # JWT 토큰 찾기 (보통 200자 이상, '.'이 포함됨)
+
+            # JWT 토큰 찾기 (보통 100자 이상, '.'이 포함됨)
             jwt_tokens = [t for t in all_tokens if len(t) > 100 and '.' in t]
-            
+
             if jwt_tokens:
                 token = jwt_tokens[0]
-                print(f"[OK] JWT 토큰 발견 (길이: {len(token)})")
+                print(f"[OK] Regex로 JWT 토큰 발견 (길이: {len(token)})")
                 return token
-            
+
             # JWT를 못 찾으면 가장 긴 토큰 (100자 이상)
             long_tokens = [t for t in all_tokens if len(t) > 100]
             if long_tokens:
                 token = long_tokens[0]
                 print(f"[OK] 토큰 발견 (길이: {len(token)})")
                 return token
-            
+
             print("[WARNING] 토큰 없이 진행")
             return None
-            
+
         except Exception as e:
             print(f"[WARNING] 토큰 추출 실패: {e}")
             return None
@@ -166,95 +189,134 @@ class InvestingCompleteKR:
         try:
             print(f"  - 전체 본문 크롤링 중...")
             time.sleep(1)
-            
-            # 한국어 사이트 URL로 변환
-            kr_url = url.replace('www.investing.com', 'kr.investing.com')
-            
-            response = self.scraper.get(kr_url, timeout=30)
-            response.raise_for_status()
-            
-            soup = BeautifulSoup(response.text, 'lxml')
-            
-            # __NEXT_DATA__에서 전체 기사 데이터 추출
-            next_data_script = soup.find('script', {'id': '__NEXT_DATA__'})
-            
-            if next_data_script:
+
+            # 한국어 사이트와 영어 사이트 모두 시도
+            urls_to_try = [
+                url.replace('www.investing.com', 'kr.investing.com'),  # 한국어 우선
+                url  # 영어 원본
+            ]
+
+            for try_url in urls_to_try:
                 try:
-                    import json
-                    data = json.loads(next_data_script.string)
-                    
-                    # 기사 데이터 찾기
-                    def find_article_data(obj, depth=0):
-                        if depth > 5:
-                            return None
-                        if isinstance(obj, dict):
-                            # body 키가 있고 충분히 긴 경우
-                            if 'body' in obj and isinstance(obj.get('body'), str) and len(obj.get('body', '')) > 500:
-                                return obj
-                            for v in obj.values():
-                                result = find_article_data(v, depth+1)
-                                if result:
-                                    return result
-                        elif isinstance(obj, list):
-                            for item in obj:
-                                result = find_article_data(item, depth+1)
-                                if result:
-                                    return result
-                        return None
-                    
-                    article_data = find_article_data(data)
-                    
-                    if article_data and 'body' in article_data:
-                        title = article_data.get('title', '')
-                        body_html = article_data['body']
-                        
-                        # HTML을 텍스트로 변환
-                        body_soup = BeautifulSoup(body_html, 'lxml')
-                        
-                        # 본문 텍스트 추출
-                        paragraphs = body_soup.find_all(['p', 'h2', 'h3', 'li'])
-                        content_parts = []
-                        
-                        for p in paragraphs:
-                            text = p.get_text().strip()
-                            # 의미있는 문단만
-                            if text and len(text) > 15:
-                                # 광고성 문구 필터링
-                                skip_phrases = ['subscribe', 'newsletter', 'sign up', 'click here', 
-                                               '구독', '뉴스레터', '가입']
-                                if not any(skip.lower() in text.lower() for skip in skip_phrases):
-                                    content_parts.append(text)
-                        
-                        content = '\n\n'.join(content_parts)
-                        
-                        if content:
-                            print(f"  - __NEXT_DATA__에서 본문 추출 완료 ({len(content)} 자)")
-                            return title, content
-                
+                    response = self.scraper.get(try_url, timeout=30)
+                    response.raise_for_status()
+
+                    soup = BeautifulSoup(response.text, 'lxml')
+
+                    # __NEXT_DATA__에서 전체 기사 데이터 추출
+                    next_data_script = soup.find('script', {'id': '__NEXT_DATA__'})
+
+                    if next_data_script:
+                        try:
+                            import json
+                            data = json.loads(next_data_script.string)
+
+                            # 현재 기사의 본문을 찾기 위해 articleStore를 우선 탐색
+                            def find_article_body(obj, depth=0):
+                                if depth > 10:
+                                    return None
+
+                                if isinstance(obj, dict):
+                                    # articleStore나 article 키를 찾아서 그 안의 body를 우선
+                                    if 'articleStore' in obj or 'article' in obj:
+                                        article_obj = obj.get('articleStore') or obj.get('article')
+                                        if isinstance(article_obj, dict):
+                                            body = article_obj.get('body', '')
+                                            if isinstance(body, str) and len(body) > 500:
+                                                return {'title': article_obj.get('title', ''), 'body': body}
+
+                                    # 일반 body 검색 (길이가 충분히 긴 것만)
+                                    if 'body' in obj and 'title' in obj:
+                                        body = obj.get('body', '')
+                                        if isinstance(body, str) and len(body) > 500:
+                                            return {'title': obj.get('title', ''), 'body': body}
+
+                                    # 재귀 탐색
+                                    for v in obj.values():
+                                        result = find_article_body(v, depth+1)
+                                        if result:
+                                            return result
+
+                                elif isinstance(obj, list):
+                                    for item in obj:
+                                        result = find_article_body(item, depth+1)
+                                        if result:
+                                            return result
+
+                                return None
+
+                            article_data = find_article_body(data)
+
+                            if article_data and article_data.get('body'):
+                                title = article_data.get('title', '')
+                                body_html = article_data['body']
+
+                                # HTML을 텍스트로 변환
+                                body_soup = BeautifulSoup(body_html, 'lxml')
+
+                                # 본문 텍스트 추출
+                                paragraphs = body_soup.find_all(['p', 'h2', 'h3', 'li'])
+                                content_parts = []
+
+                                for p in paragraphs:
+                                    text = p.get_text().strip()
+                                    # 의미있는 문단만
+                                    if text and len(text) > 15:
+                                        # 광고성 문구 필터링
+                                        skip_phrases = ['subscribe', 'newsletter', 'sign up', 'click here',
+                                                       '구독', '뉴스레터', '가입']
+                                        if not any(skip.lower() in text.lower() for skip in skip_phrases):
+                                            content_parts.append(text)
+
+                                content = '\n\n'.join(content_parts)
+
+                                # 본문 검증
+                                if content and self.is_valid_article_content(content):
+                                    print(f"  - __NEXT_DATA__에서 본문 추출 완료 ({len(content)} 자)")
+                                    return title, content
+                                elif content:
+                                    print(f"  - __NEXT_DATA__ 결과가 유효하지 않음 (법적 고지 등)")
+                                    # 다음 URL 시도
+                                    continue
+
+                        except Exception as e:
+                            print(f"  [WARNING] __NEXT_DATA__ 파싱 실패: {e}")
+
+                    # 이 URL에서 성공했다면 Readability 시도하지 않고 다음 URL로
+                    # (한국어에서 실패하면 영어 시도)
+
                 except Exception as e:
-                    print(f"  [WARNING] __NEXT_DATA__ 파싱 실패: {e}")
+                    # 404나 다른 에러면 다음 URL 시도
+                    if '404' in str(e):
+                        print(f"  - 한국어 페이지 없음, 영어 페이지 시도...")
+                        continue
+                    print(f"  [WARNING] 크롤링 실패 ({try_url}): {e}")
+                    continue
             
             # Fallback: Readability 사용
             print(f"  - Readability 방식으로 시도...")
             doc = Document(response.text)
             title = doc.title()
             content_html = doc.summary()
-            
+
             soup2 = BeautifulSoup(content_html, 'lxml')
             paragraphs = soup2.find_all(['p', 'h2', 'h3'])
             content_parts = []
-            
+
             for p in paragraphs:
                 text = p.get_text().strip()
                 if text and len(text) > 20:
                     content_parts.append(text)
-            
+
             content = '\n\n'.join(content_parts)
-            
-            if content:
+
+            # Readability 결과 검증
+            if content and self.is_valid_article_content(content):
                 print(f"  - Readability로 본문 추출 ({len(content)} 자)")
                 return title, content
-            
+            elif content:
+                print(f"  - Readability 결과가 유효하지 않음 (법적 고지 등)")
+
             return None, None
             
         except Exception as e:
@@ -300,6 +362,40 @@ class InvestingCompleteKR:
             print(f"  [WARNING] 주식 정보 조회 실패: {e}")
             return []
     
+    def is_valid_article_content(self, text):
+        """본문이 유효한 기사 내용인지 검증"""
+        if not text or len(text) < 200:
+            return False
+
+        # 법적 고지사항이나 불필요한 내용 필터링
+        invalid_keywords = [
+            'risk warning', 'disclaimer', '리스크 고지', '면책 조항',
+            'fusion media', '판권소유', 'all rights reserved',
+            'terms and conditions', '이용약관',
+            'privacy policy', '개인정보 보호정책'
+        ]
+
+        # 텍스트 앞부분 500자를 검사 (법적 고지가 앞에 오는 경우가 많음)
+        text_start = text[:500].lower()
+
+        # 여러 개의 invalid 키워드가 포함되어 있으면 법적 고지로 판단
+        keyword_count = sum(1 for keyword in invalid_keywords if keyword.lower() in text_start)
+
+        if keyword_count >= 2:
+            print(f"  [WARNING] 법적 고지사항으로 판단되어 스킵 (키워드 {keyword_count}개 발견)")
+            return False
+
+        # 전체 텍스트에서 법적 키워드 비율 확인
+        total_text_lower = text.lower()
+        legal_word_count = sum(total_text_lower.count(keyword.lower()) for keyword in invalid_keywords)
+
+        # 텍스트가 짧은데 법적 키워드가 많으면 의심
+        if len(text) < 1000 and legal_word_count >= 5:
+            print(f"  [WARNING] 법적 고지사항 비율이 높아 스킵")
+            return False
+
+        return True
+
     def is_korean(self, text):
         """텍스트가 한국어인지 확인"""
         if not text:
@@ -503,11 +599,35 @@ class InvestingCompleteKR:
             
             # 9. Jekyll Front Matter 생성
             image_line = f'image: "{image_url}"\n' if image_url else ''
-            
+
             # YAML 이스케이프: 작은따옴표 사용 (더 안전)
             title_escaped = title_kr.replace("'", "''")
             excerpt_escaped = excerpt.replace("'", "''")
-            
+
+            # 주식 태그 생성 (symbol과 instrument_id 포함)
+            stock_tags = []
+            if instruments:
+                for inst in instruments:
+                    symbol = inst.get('symbol', '')
+                    inst_id = inst.get('id', '')
+                    exchange_id = inst.get('exchange_id', '')
+                    if symbol and inst_id:
+                        stock_tags.append({
+                            'symbol': symbol,
+                            'instrument_id': inst_id,
+                            'exchange_id': exchange_id
+                        })
+
+            # YAML 형식으로 stock_tags 생성
+            stock_tags_yaml = ""
+            if stock_tags:
+                stock_tags_yaml = "stock_tags:\n"
+                for tag in stock_tags:
+                    stock_tags_yaml += f"  - symbol: {tag['symbol']}\n"
+                    stock_tags_yaml += f"    instrument_id: {tag['instrument_id']}\n"
+                    if tag['exchange_id']:
+                        stock_tags_yaml += f"    exchange_id: {tag['exchange_id']}\n"
+
             front_matter = f"""---
 layout: post
 title: '{title_escaped}'
@@ -515,7 +635,7 @@ date: {pub_date.strftime('%Y-%m-%d %H:%M:%S +0900')}
 categories: [Financial]
 author: "Investing.com"
 {image_line}excerpt: '{excerpt_escaped}'
----
+{stock_tags_yaml}---
 
 {content_kr}
 

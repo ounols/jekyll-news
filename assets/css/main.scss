@@ -10337,7 +10337,7 @@ table td {
 
   // Background image mode
   &--has-image {
-    background-image: linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)), var(--bg-image);
+    background-image: linear-gradient(rgba(255, 255, 255, 0.4), rgba(100, 100, 100, 0.8)), var(--bg-image);
     background-size: cover !important;
     background-position: center !important;
 
@@ -10389,13 +10389,13 @@ table td {
       margin-bottom: 12px;
 
       a {
-        text-shadow: 0 1px 3px rgba(255, 255, 255, 0.8);
+        text-shadow: 0 0px 1px var(--heading-font-color, 0.1);
         font-weight: 600;
       }
     }
 
     .article__excerpt {
-      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+      // text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
       margin-bottom: 16px;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -10413,7 +10413,7 @@ table td {
     .article__date {
       font-size: 14px;
       font-weight: 500;
-      color: var(--text-alt-color);
+      color: var(--text-color);
     }
 
     @media only screen and (max-width: 768px) {
@@ -10493,14 +10493,14 @@ table td {
 // Dark mode styles for background image cards
 [dark] {
   .article__inner--has-image {
-    background-image: linear-gradient(rgba(32, 35, 42, 0.75), rgba(32, 35, 42, 0.75)), var(--bg-image);
+    background-image: linear-gradient(rgba(32, 35, 42, 0.6), rgba(32, 35, 42, 0.9)), var(--bg-image);
 
     &:hover {
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     }
 
     .article__title a {
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      text-shadow: 0 0px 1px var(--heading-font-color, 0.1);
     }
 
     .article__excerpt {
@@ -10631,7 +10631,7 @@ table td {
   display: -webkit-box;
   margin-bottom: 24px;
   font-size: 16px;
-  color: var(--text-alt-color);
+  // color: var(--text-alt-color);
   overflow-y: hidden;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
