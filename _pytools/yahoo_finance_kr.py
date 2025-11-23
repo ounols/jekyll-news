@@ -26,18 +26,40 @@ if sys.platform == 'win32':
 class YahooFinanceKR:
     def __init__(self):
         self.base_url = "https://finance.yahoo.com"
-        self.rss_url = "https://finance.yahoo.com/news/rssindex"
+        # RSS 피드 URL 목록
+        self.rss_feeds = [
+            "https://finance.yahoo.com/news/rssindex",
+            "https://finance.yahoo.com/rss/topstories",
+        ]
         self.posts_dir = Path(__file__).parent.parent / "_posts"
         self.posts_dir.mkdir(exist_ok=True)
 
-        # cloudscraper 세션 생성
+        # cloudscraper 세션 생성 (더 강화된 설정)
         self.scraper = cloudscraper.create_scraper(
             browser={
                 'browser': 'chrome',
                 'platform': 'windows',
+                'desktop': True,
                 'mobile': False
-            }
+            },
+            delay=10
         )
+
+        # 공통 헤더
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Cache-Control': 'max-age=0',
+        }
 
         # 번역기 초기화
         self.translator = GoogleTranslator(source='en', target='ko')
@@ -63,25 +85,59 @@ class YahooFinanceKR:
         try:
             print("[INFO] Yahoo Finance 뉴스 수집 중...")
 
-            # 메인 뉴스 페이지에서 기사 목록 추출
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
-            }
-
-            # 여러 카테고리에서 뉴스 수집
-            news_urls = [
-                f"{self.base_url}/topic/stock-market-news/",
-                f"{self.base_url}/topic/latest-news/",
-            ]
-
             articles = []
             seen_urls = set()
 
-            for news_url in news_urls:
+            # 방법 1: RSS 피드 시도
+            print("  - RSS 피드 시도 중...")
+            for rss_url in self.rss_feeds:
                 try:
-                    response = self.scraper.get(news_url, headers=headers, timeout=30)
+                    response = self.scraper.get(rss_url, headers=self.headers, timeout=30)
+                    if response.status_code == 200:
+                        soup = BeautifulSoup(response.text, 'lxml-xml')
+                        items = soup.find_all('item')
+
+                        for item in items:
+                            title_tag = item.find('title')
+                            link_tag = item.find('link')
+                            desc_tag = item.find('description')
+
+                            if title_tag and link_tag:
+                                title = title_tag.get_text(strip=True)
+                                url = link_tag.get_text(strip=True)
+
+                                if url in seen_urls:
+                                    continue
+                                seen_urls.add(url)
+
+                                articles.append({
+                                    'title': title,
+                                    'url': url,
+                                    'image_url': '',
+                                    'summary': desc_tag.get_text(strip=True) if desc_tag else '',
+                                    'source': 'Yahoo Finance'
+                                })
+
+                        if articles:
+                            print(f"  - RSS에서 {len(articles)}개 기사 발견")
+                            break
+
+                    time.sleep(1)
+                except Exception as e:
+                    print(f"  [WARNING] RSS 피드 실패: {e}")
+                    continue
+
+            # 방법 2: 웹페이지 크롤링 (RSS 실패 시)
+            if not articles:
+                print("  - 웹페이지 크롤링 시도 중...")
+                news_urls = [
+                    f"{self.base_url}/topic/stock-market-news/",
+                    f"{self.base_url}/topic/latest-news/",
+                ]
+
+            for news_url in news_urls if not articles else []:
+                try:
+                    response = self.scraper.get(news_url, headers=self.headers, timeout=30)
                     if response.status_code != 200:
                         continue
 
