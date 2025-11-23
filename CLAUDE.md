@@ -45,9 +45,13 @@ jekyll-news/
 ├── _posts/                  # Blog posts (YYYY-MM-DD-slug.md)
 ├── _authors/                # Author profiles
 ├── _pytools/                # Python news scraping tools
-│   ├── investing_complete_kr.py  # Main crawler
-│   ├── requirements.txt     # Python dependencies
-│   └── ticker_cache.json    # Stock symbol mapping
+│   ├── run_all_crawlers.py       # Unified crawler runner
+│   ├── investing_complete_kr.py  # Investing.com crawler
+│   ├── yahoo_finance_kr.py       # Yahoo Finance crawler
+│   ├── marketwatch_kr.py         # MarketWatch crawler
+│   ├── cnbc_kr.py                # CNBC crawler
+│   ├── requirements.txt          # Python dependencies
+│   └── ticker_cache.json         # Stock symbol mapping
 ├── assets/
 │   ├── css/
 │   │   ├── main.scss        # Main styles
@@ -100,7 +104,7 @@ stock_tags:
     instrument_id: 6497
 ```
 
-### Running the News Crawler
+### Running the News Crawlers
 
 ```bash
 cd _pytools
@@ -110,19 +114,31 @@ source venv/bin/activate  # Linux/Mac
 
 pip install -r requirements.txt
 
-# Fetch 5 articles (default)
-python investing_complete_kr.py
+# Run all crawlers (5 articles each)
+python run_all_crawlers.py
 
-# Fetch specific count
-python investing_complete_kr.py --limit 10
+# Run all crawlers with custom limit
+python run_all_crawlers.py --limit 10
+
+# Run specific source only
+python run_all_crawlers.py --source investing  # Investing.com
+python run_all_crawlers.py --source yahoo      # Yahoo Finance
+python run_all_crawlers.py --source mw         # MarketWatch
+python run_all_crawlers.py --source cnbc       # CNBC
+
+# Or run individual crawlers directly
+python investing_complete_kr.py --limit 5
+python yahoo_finance_kr.py --limit 5
+python marketwatch_kr.py --limit 5
+python cnbc_kr.py --limit 5
 ```
 
-The crawler:
-1. Fetches breaking news from Investing.com
-2. Extracts full article content
-3. Translates to Korean via Google Translate
-4. Generates Jekyll posts with stock ticker badges
-5. Saves to `../_posts/`
+All crawlers:
+1. Fetch news from their respective sources
+2. Extract full article content
+3. Translate to Korean via Google Translate
+4. Generate Jekyll posts with stock ticker badges
+5. Save to `../_posts/`
 
 ## Key Conventions
 
@@ -168,9 +184,22 @@ The crawler:
 | `_layouts/post.html` | Post template with author, share buttons, related posts |
 | `assets/js/main.js` | Search, dark mode, mobile menu, category tabs |
 | `assets/js/stock-ticker.js` | Real-time stock price updates |
-| `_pytools/investing_complete_kr.py` | News crawler and post generator |
+| `_pytools/run_all_crawlers.py` | Unified crawler runner for all sources |
+| `_pytools/investing_complete_kr.py` | Investing.com news crawler |
+| `_pytools/yahoo_finance_kr.py` | Yahoo Finance news crawler |
+| `_pytools/marketwatch_kr.py` | MarketWatch news crawler |
+| `_pytools/cnbc_kr.py` | CNBC news crawler |
 | `_pytools/ticker_cache.json` | Stock symbol to Investing.com ID mapping |
 | `search.json` | Liquid template generating search index |
+
+## News Crawler Sources
+
+| Source | File | Description |
+|--------|------|-------------|
+| Investing.com | `investing_complete_kr.py` | Breaking News API, full content, stock data |
+| Yahoo Finance | `yahoo_finance_kr.py` | Stock Market News, Latest News sections |
+| MarketWatch | `marketwatch_kr.py` | Latest News, Markets, Investing sections |
+| CNBC | `cnbc_kr.py` | Markets, Investing, Technology sections |
 
 ## Stock Ticker System
 
