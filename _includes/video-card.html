@@ -30,14 +30,14 @@
     <div class="article__meta">
       {% assign video_author = site.authors | where: "name", include.video.author | first %}
       {% if video_author %}
-      <a href="{{ video_author.url | relative_url }}" class="article__author__image">
+      <a href="{{ video_author.site }}" class="article__author__image">
         <img alt="{{ include.video.author }}" src="{{ video_author.image | default: '/assets/images/authors/default.jpg' | relative_url }}">
       </a>
       {% endif %}
 
       <div class="article__meta__bottom">
         {% if include.video.author %}
-        <a class="article__author__name" href="{% if video_author %}{{ video_author.url | relative_url }}{% else %}#{% endif %}">{{ include.video.author }}</a>
+        <a class="article__author__name" href="{% if video_author %}{{ video_author.site }}{% else %}#{% endif %}">{{ include.video.author }}</a>
         {% endif %}
         <time class="article__date" datetime="{{ include.video.date | date: '%Y-%m-%d' }}">{{ include.video.date | date: "%d %b %Y" }}</time>
       </div>

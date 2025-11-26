@@ -76,7 +76,7 @@
                   <a class="recent-posts__image" href="{{ post.url | relative_url }}"><img alt="{{ post.title }}" src="{{ post.image | relative_url }}"></a>
                   {% endif %}
                   <div class="recent-posts__content">
-                    <div class="article__meta">
+                    <div class="article__meta" style="flex-direction: unset !important;">
                       {% if post.categories %}
                       <div class="article__tags">
                         {% for category in post.categories %}
@@ -86,16 +86,11 @@
                       {% endif %}
                     </div>
                     <h4 class="recent-posts__title"><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h4>
-                    <div class="article__meta">
+                    <div class="article__meta" style="flex-direction: unset !important;">
                       {% assign post_author = site.authors | where: "name", post.author | first %}
-                      {% if post_author %}
-                      <a href="{{ post_author.url | relative_url }}" class="article__author__image">
-                        <img alt="{{ post.author }}" src="{{ post_author.image | default: '/assets/images/authors/default.jpg' | relative_url }}">
-                      </a>
-                      {% endif %}
                       <div class="article__meta__bottom">
                         {% if post.author %}
-                        <a class="article__author__name" href="{% if post_author %}{{ post_author.url | relative_url }}{% else %}#{% endif %}">{{ post.author }}</a>
+                        <a class="article__author__name" href="{% if post_author %}{{ post_author.site }}{% else %}#{% endif %}">{{ post.author }}</a>
                         {% endif %}
                         <time class="article__date" datetime="{{ post.date | date: '%Y-%m-%d' }}">{{ post.date | date: "%d %b %Y" }}</time>
                       </div>
@@ -133,7 +128,7 @@
 
         <div class="footer__info">
           <div class="footer__info-box">
-            <div class="copyright">{{ 'now' | date: "%Y" }} © <a href="{{ '/' | relative_url }}">{{ site.title }}</a>. Crafted & Designed by <a href="https://jekyllthemes.io/developers/artem-sheludko">Artem Sheludko</a>.</div>
+            <div class="copyright">{{ 'now' | date: "%Y" }} © <a href="{{ '/' | relative_url }}">{{ site.title }}</a>. Crafted & Designed by Artem Sheludko, modified by ounols</div>
             <div class="top" title="Top"><i class="fa-solid fa-arrow-up"></i></div>
           </div>
         </div>

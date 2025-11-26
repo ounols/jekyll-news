@@ -43,24 +43,67 @@ class InvestingCompleteKR:
         # 번역기 초기화
         self.translator = GoogleTranslator(source='en', target='ko')
         self.bearer_token = None
-        
-        # Ticker 캐시 로드
-        self.ticker_cache = self.load_ticker_cache()
     
-    def load_ticker_cache(self):
-        """Ticker 캐시 파일 로드"""
-        cache_file = Path(__file__).parent / "ticker_cache.json"
+    def search_instrument(self, search_text):
+        """
+        Investing.com 검색 API로 종목 정보 조회
+
+        Args:
+            search_text: 검색어 (예: "nvda", "005930", "samsung")
+
+        Returns:
+            dict: {'id': int, 'symbol': str, 'name': str, 'aql_link': str, 'exchange': str}
+            또는 None (검색 실패)
+        """
+        if not search_text:
+            return None
+
         try:
-            if cache_file.exists():
-                import json
-                with open(cache_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    return data.get('tickers', {})
-            return {}
+            url = "https://kr.investing.com/search/service/search"
+
+            data = {
+                'search_text': search_text,
+                'term': search_text,
+                'country_id': '0',
+                'tab_id': 'All'
+            }
+
+            headers = {
+                'Accept': 'application/json, text/javascript, */*; q=0.01',
+                'Accept-Language': 'ko-KR,ko;q=0.8,en-US;q=0.5,en;q=0.3',
+                'Accept-Encoding': 'gzip, deflate, br, zstd',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Origin': 'https://kr.investing.com',
+                'Referer': 'https://kr.investing.com/',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0'
+            }
+
+            response = self.scraper.post(url, data=data, headers=headers, timeout=30)
+
+            if response.status_code == 200:
+                result_data = response.json()
+                all_results = result_data.get('All', [])
+
+                if all_results and len(all_results) > 0:
+                    first_result = all_results[0]
+
+                    inst_info = {
+                        'id': first_result.get('pair_ID'),
+                        'symbol': first_result.get('symbol'),
+                        'name': first_result.get('name'),
+                        'aql_link': first_result.get('aql_link'),
+                        'exchange': first_result.get('exchange_popular_symbol')
+                    }
+
+                    return inst_info
+
+            return None
+
         except Exception as e:
-            print(f"[WARNING] 티커 캐시 로드 실패: {e}")
-            return {}
-        
+            print(f"[WARNING] 종목 검색 실패 ({search_text}): {e}")
+            return None
+
     def extract_bearer_token(self):
         """Bearer 토큰 추출 (개선된 버전)"""
         try:
@@ -452,10 +495,13 @@ class InvestingCompleteKR:
         return cleaned.strip()
     
     def convert_tickers_to_badges(self, text, instruments_info=None):
-        """티커 심볼을 실시간 뱃지로 변환"""
+        """
+        티커 심볼을 실시간 뱃지로 변환
+        API 데이터 또는 동적 검색으로 instrument_id 조회
+        """
         # 패턴: (KS:005930), (NASDAQ:NVDA), (TYO:9984) 등
         pattern = r'\(([A-Z]+):([A-Z0-9]+)\)'
-        
+
         # instrument 정보로부터 symbol -> id 매핑 생성
         symbol_to_id = {}
         if instruments_info:
@@ -464,27 +510,28 @@ class InvestingCompleteKR:
                 inst_id = inst.get('id')
                 if symbol and inst_id:
                     symbol_to_id[symbol] = inst_id
-        
+
         def replace_ticker(match):
             exchange = match.group(1)
             symbol = match.group(2)
             full_ticker = f"{exchange}:{symbol}"
-            
-            # instrument_id 찾기 (우선순위: API 데이터 > 캐시)
-            instrument_id = (
-                symbol_to_id.get(symbol) or 
-                self.ticker_cache.get(symbol) or 
-                self.ticker_cache.get(full_ticker) or
-                ''
-            )
-            
-            # instrument ID를 찾지 못하면 해당 텍스트를 아예 제거
+
+            # 1. API 데이터에서 먼저 조회
+            instrument_id = symbol_to_id.get(symbol)
+
+            # 2. 없으면 검색 API로 동적 조회
+            if not instrument_id:
+                search_result = self.search_instrument(symbol)
+                if search_result and search_result.get('id'):
+                    instrument_id = search_result['id']
+
+            # 3. 찾지 못하면 해당 텍스트를 제거
             if not instrument_id:
                 return ''
-            
+
             # HTML 마크업으로 변환
             return f'<span class="stock-ticker" data-ticker="{full_ticker}" data-exchange="{exchange}" data-symbol="{symbol}" data-instrument-id="{instrument_id}">({full_ticker})</span>'
-        
+
         return re.sub(pattern, replace_ticker, text)
     
     def create_post(self, article, index):
@@ -560,44 +607,63 @@ class InvestingCompleteKR:
             # 5.5. 티커 심볼을 실시간 뱃지로 변환 (excerpt 생성 후)
             content_kr = self.convert_tickers_to_badges(content_kr, instruments)
             
-            # 6. 주식 정보 마크다운 생성
-            instruments_md = ""
-            if instruments:
-                instruments_md = "\n\n## 📈 관련 주식\n\n"
-                for inst in instruments:
-                    name = inst.get('name', '')
-                    symbol = inst.get('symbol', '')
-                    price_info = inst.get('price', {})
-                    link = inst.get('link', '')
+            # 6. 주식 정보 마크다운 생성 (front matter에 포함되기 때문에 본문은 생략)
+            # instruments_md = ""
+            # if instruments:
+            #     instruments_md = "\n\n## 📈 관련 주식\n\n"
+            #     for inst in instruments:
+            #         name = inst.get('name', '')
+            #         symbol = inst.get('symbol', '')
+            #         price_info = inst.get('price', {})
+            #         link = inst.get('link', '')
                     
-                    last_price = price_info.get('last', 0)
-                    change = price_info.get('change', 0)
-                    change_percent = price_info.get('change_percent', 0)
+            #         last_price = price_info.get('last', 0)
+            #         change = price_info.get('change', 0)
+            #         change_percent = price_info.get('change_percent', 0)
                     
-                    # 등락 아이콘
-                    icon = "🔺" if change > 0 else "🔻" if change < 0 else "➡️"
+            #         # 등락 아이콘
+            #         icon = "🔺" if change > 0 else "🔻" if change < 0 else "➡️"
                     
-                    instruments_md += f"### {icon} [{name} ({symbol})]({link})\n\n"
-                    instruments_md += f"- **현재가**: {last_price:,.2f}\n"
-                    instruments_md += f"- **변동**: {change:+.2f} ({change_percent:+.2f}%)\n\n"
+            #         instruments_md += f"### {icon} [{name} ({symbol})]({link})\n\n"
+            #         instruments_md += f"- **현재가**: {last_price:,.2f}\n"
+            #         instruments_md += f"- **변동**: {change:+.2f} ({change_percent:+.2f}%)\n\n"
             
             # 7. 날짜
             pub_date = datetime.now()
             date_str = pub_date.strftime('%Y-%m-%d')
-            
+
             # 8. 파일명 생성
             filename_base = self.sanitize_filename(title_kr)
             if not filename_base or len(filename_base) < 5:
                 filename_base = self.sanitize_filename(original_title)
-            
-            filename = f"{date_str}-fin-{index:02d}-{filename_base}.md"
+
+            filename = f"{date_str}-{filename_base}.md"
             filepath = self.posts_dir / filename
-            
+
+            # 9. 중복 판단: front matter의 article_id로 확인
+            article_id = article.get('id', '')
+            is_duplicate = False
+
             if filepath.exists():
-                print(f"  [SKIP] 이미 존재: {filename}")
+                # 파일이 존재하면 front matter에서 article_id 확인
+                try:
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        existing_content = f.read()
+                        # front matter에서 article_id 추출
+                        import re as regex_module
+                        match = regex_module.search(r'article_id:\s*["\']?([^"\'\n]+)["\']?', existing_content)
+                        if match:
+                            existing_article_id = match.group(1)
+                            if existing_article_id == article_id:
+                                is_duplicate = True
+                except:
+                    pass
+
+            if is_duplicate:
+                print(f"  [SKIP] 중복 기사 (ID: {article_id}): {filename}")
                 return False
             
-            # 9. Jekyll Front Matter 생성
+            # 10. Jekyll Front Matter 생성
             image_line = f'image: "{image_url}"\n' if image_url else ''
 
             # YAML 이스케이프: 작은따옴표 사용 (더 안전)
@@ -634,20 +700,20 @@ title: '{title_escaped}'
 date: {pub_date.strftime('%Y-%m-%d %H:%M:%S +0900')}
 categories: [Financial]
 author: "Investing.com"
+article_id: "{article_id}"
 {image_line}excerpt: '{excerpt_escaped}'
 {stock_tags_yaml}---
 
 {content_kr}
 
-{instruments_md}
 
 ---
 """
-            
-            # 10. 파일 저장
+
+            # 11. 파일 저장
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(front_matter)
-            
+
             print(f"  [OK] 포스트 생성 완료: {filename}\n")
             return True
             
@@ -682,9 +748,9 @@ author: "Investing.com"
             except Exception as e:
                 print(f"[ERROR] 처리 중 오류: {e}")
                 continue
-        
+
         print("\n" + "=" * 70)
-        print(f"✅ 완료: {created_count}개의 포스트 생성됨")
+        print(f"OK: 완료 - {created_count}개의 포스트 생성됨")
         print("=" * 70)
 
 

@@ -23,14 +23,14 @@
     <div class="article__meta">
       {% assign post_author = site.authors | where: "name", include.post.author | first %}
       {% if post_author %}
-      <a href="{{ post_author.url | relative_url }}" class="article__author__image">
+      <a href="{{ post_author.site }}" class="article__author__image">
         <img alt="{{ include.post.author }}" src="{{ post_author.image | default: '/assets/images/authors/default.jpg' | relative_url }}">
       </a>
       {% endif %}
 
       <div class="article__meta__bottom">
         {% if include.post.author %}
-        <a class="article__author__name" href="{% if post_author %}{{ post_author.url | relative_url }}{% else %}#{% endif %}">{{ include.post.author }}</a>
+        <a class="article__author__name" href="{% if post_author %}{{ post_author.site }}{% else %}#{% endif %}">{{ include.post.author }}</a>
         {% endif %}
         <time class="article__date" datetime="{{ include.post.date | date: '%Y-%m-%d' }}">{{ include.post.date | date: "%d %b %Y" }}</time>
       </div>

@@ -22,6 +22,16 @@
     <p class="article__excerpt">{{ include.post.excerpt | default: include.post.content | strip_html | truncatewords: 15 }}</p>
 
     <div class="article__meta">
+      {% if include.post.stock_tags %}
+      <div class="article__stocks">
+        {% for tag in include.post.stock_tags %}
+        <span class="stock-badge stock-badge--card" data-symbol="{{ tag.symbol }}" data-instrument-id="{{ tag.instrument_id }}">
+          {{ tag.symbol }}
+        </span>
+        {% endfor %}
+      </div>
+      {% endif %}
+
       <div class="article__meta__bottom">
         <time class="article__date" datetime="{{ include.post.date | date: '%Y-%m-%d' }}">{{ include.post.date | date: "%d %b %Y" }}</time>
       </div>

@@ -23,17 +23,29 @@ layout: default
       <div class="post__meta">
         {% assign author = site.authors | where: "name", page.author | first %}
         {% if author %}
-        <a href="{{ author.url | relative_url }}" class="post__author__image">
+        <a href="{{ author.site }}" class="post__author__image">
           <img alt="{{ page.author }}" src="{{ author.image | default: '/assets/images/authors/default.jpg' | relative_url }}">
         </a>
         {% endif %}
 
         <div class="post__meta__bottom">
           {% if page.author %}
-          <a class="post__author__name" href="{% if author %}{{ author.url | relative_url }}{% else %}#{% endif %}">{{ page.author }}</a>
+          <a class="post__author__name" href="{% if author %}{{ author.site }}{% else %}#{% endif %}">{{ page.author }}</a>
           {% endif %}
           <time class="post__date" datetime="{{ page.date | date: '%Y-%m-%d' }}">{{ page.date | date: "%d %b %Y" }}</time>
         </div>
+
+        {% if page.stock_tags %}
+        <div class="post__stocks">
+          {% for tag in page.stock_tags %}
+          <span class="stock-badge stock-badge--post"
+                data-symbol="{{ tag.symbol }}"
+                data-instrument-id="{{ tag.instrument_id }}">
+            {{ tag.symbol }}
+          </span>
+          {% endfor %}
+        </div>
+        {% endif %}
       </div>
     </div>
 
@@ -84,14 +96,14 @@ layout: default
 <div class="container">
   <div class="card-author">
     <div class="card-author__media">
-      <a class="card-author__image" href="{{ author.url | relative_url }}">
+      <a class="card-author__image" href="{{ author.site }}">
         <img alt="{{ author.name }}" src="{{ author.image | default: '/assets/images/authors/default.jpg' | relative_url }}">
       </a>
     </div>
 
     <div class="card-author__content">
       <div class="card-author__role">Written by</div>
-      <h3 class="card-author__name"><a href="{{ author.url | relative_url }}" class="card-author__link">{{ author.name }}</a></h3>
+      <h3 class="card-author__name"><a href="{{ author.site }}" class="card-author__link">{{ author.name }}</a></h3>
       {% if author.bio %}
       <p class="card-author__description">{{ author.bio }}</p>
       {% endif %}

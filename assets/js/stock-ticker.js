@@ -1,54 +1,80 @@
 /**
  * 실시간 주식 티커 뱃지
- * Investing.com API를 사용하여 실시간 주가 정보를 표시
+ * Investing.com 검색 API + 실시간 가격 API를 사용하여 실시간 주가 정보를 표시
  */
 
 (function() {
   'use strict';
 
-  // 주요 종목 티커 → instrument_id 매핑
-  const TICKER_MAP = {
-    // 한국
-    '005930': '38081',  // 삼성전자
-    '000660': '38088',  // SK하이닉스
-    // 미국 (NASDAQ)
-    'NVDA': '6497',     // NVIDIA
-    'AAPL': '6408',     // Apple
-    'MSFT': '20',       // Microsoft
-    'GOOGL': '1057391', // Alphabet
-    'TSLA': '13994',    // Tesla
-    'META': '106640',   // Meta
-    'AMZN': '6435',     // Amazon
-    // 미국 (NYSE)
-    'ARKK': '959230',   // ARK Innovation ETF
-    'WMT': '7997',      // Walmart
-    'JPM': '267',       // JPMorgan Chase
-    'V': '40611',       // Visa
-    'JNJ': '294',       // Johnson & Johnson
-    // 대만
-    '2330': '43430',    // TSMC
-    '2317': '44237',    // Hon Hai (Foxconn)
-    // 일본
-    '9984': '35680',    // SoftBank
-    '6857': '35838',    // Advantest
-    '8035': '35703',    // Tokyo Electron
-    // 홍콩
-    '9888': '1055009',  // Baidu
-    '9988': '1057420',  // Alibaba
-    '0700': '20727',    // Tencent
-    '0981': '44296',    // SMIC
-    // 중국 (상하이)
-    '688256': '1164029', // Cambricon
-  };
+  // 검색 결과 캐시 (같은 심볼 중복 요청 방지)
+  const instrumentCache = new Map();
 
-  // API 호출 함수 (단일 instrument)
+  // Investing.com 검색 API로 종목 정보 조회
+  async function searchInstrument(symbol) {
+    // 캐시 확인
+    if (instrumentCache.has(symbol)) {
+      return instrumentCache.get(symbol);
+    }
+
+    const url = 'https://kr.investing.com/search/service/search';
+
+    try {
+      console.log('[Stock Ticker] 종목 검색 중:', symbol);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: new URLSearchParams({
+          search_text: symbol,
+          term: symbol,
+          country_id: '0',
+          tab_id: 'All'
+        })
+      });
+
+      if (!response.ok) {
+        console.error('[Stock Ticker] 검색 API 오류:', response.status);
+        return null;
+      }
+
+      const data = await response.json();
+      const results = data.All || [];
+
+      if (results.length > 0) {
+        const result = results[0];
+        const instrumentInfo = {
+          id: result.pair_ID,
+          symbol: result.symbol,
+          name: result.name,
+          exchange: result.exchange_popular_symbol
+        };
+
+        // 캐시에 저장
+        instrumentCache.set(symbol, instrumentInfo);
+        console.log('[Stock Ticker] 검색 성공:', symbol, '->', instrumentInfo.id);
+        return instrumentInfo;
+      }
+
+      console.warn('[Stock Ticker] 검색 결과 없음:', symbol);
+      return null;
+
+    } catch (error) {
+      console.error('[Stock Ticker] 검색 API 호출 실패:', error);
+      return null;
+    }
+  }
+
+  // API 호출 함수 (단일 instrument - 실시간 가격 조회)
   async function fetchSingleStock(instrumentId) {
     const url = `https://endpoints.investing.com/pd-instruments/v1/instruments?instrument_ids=${instrumentId}`;
-    console.log('[Stock Ticker] API URL:', url);
-    
+    console.log('[Stock Ticker] 가격 API 호출:', instrumentId);
+
     try {
       const response = await fetch(url);
-      console.log('[Stock Ticker] API 응답 상태:', response.status);
+      console.log('[Stock Ticker] 가격 API 응답 상태:', response.status);
       if (!response.ok) {
         const text = await response.text();
         console.error('[Stock Ticker] 오류 응답:', text);
@@ -57,7 +83,7 @@
       const data = await response.json();
       return data[0]; // 첫 번째 항목 반환
     } catch (error) {
-      console.error('주식 데이터 가져오기 실패:', error);
+      console.error('[Stock Ticker] 가격 데이터 가져오기 실패:', error);
       return null;
     }
   }
@@ -96,65 +122,162 @@
     return `<span class="stock-badge ${colorClass}">${symbol} ${icon} ${sign}${formattedChange}%</span>`;
   }
 
+  // Post-Card 배지 업데이트 함수
+  async function updateCardBadges() {
+    console.log('[Stock Ticker] Post-Card 배지 업데이트 시작');
+    const cardBadges = document.querySelectorAll('.stock-badge--card');
+    console.log('[Stock Ticker] 발견된 Post-Card 배지:', cardBadges.length);
+
+    if (cardBadges.length === 0) {
+      console.log('[Stock Ticker] Post-Card 배지가 없습니다');
+      return;
+    }
+
+    const updatePromises = [];
+
+    cardBadges.forEach(element => {
+      const symbol = element.dataset.symbol;
+      const instrumentId = element.dataset.instrumentId;
+
+      console.log('[Stock Ticker] Post-Card 배지 처리:', symbol, 'ID:', instrumentId);
+
+      if (instrumentId) {
+        updatePromises.push(
+          fetchSingleStock(instrumentId).then(data => {
+            if (data) {
+              const change = data.price?.change || 0;
+              const changePercent = data.price?.change_percent || 0;
+              const isUp = change > 0;
+              const isDown = change < 0;
+              const colorClass = isUp ? 'badge-up' : isDown ? 'badge-down' : 'badge-neutral';
+              const sign = isUp ? '+' : '';
+
+              // Post-Card 배지 업데이트
+              element.className = `stock-badge stock-badge--card ${colorClass}`;
+              element.textContent = `${symbol} ${sign}${changePercent.toFixed(2)}%`;
+              element.classList.add('ticker-loaded');
+
+              console.log('[Stock Ticker] Post-Card 배지 업데이트 완료:', symbol);
+            }
+          })
+        );
+      }
+    });
+
+    await Promise.all(updatePromises);
+    console.log('[Stock Ticker] Post-Card 배지 업데이트 완료');
+  }
+
+  // Post 페이지 메타 배지 업데이트 함수
+  async function updatePostBadges() {
+    console.log('[Stock Ticker] Post 메타 배지 업데이트 시작');
+    const postBadges = document.querySelectorAll('.stock-badge--post');
+    console.log('[Stock Ticker] 발견된 Post 메타 배지:', postBadges.length);
+
+    if (postBadges.length === 0) {
+      console.log('[Stock Ticker] Post 메타 배지가 없습니다');
+      return;
+    }
+
+    const updatePromises = [];
+
+    postBadges.forEach(element => {
+      const symbol = element.dataset.symbol;
+      const instrumentId = element.dataset.instrumentId;
+
+      console.log('[Stock Ticker] Post 메타 배지 처리:', symbol, 'ID:', instrumentId);
+
+      if (instrumentId) {
+        updatePromises.push(
+          fetchSingleStock(instrumentId).then(data => {
+            if (data) {
+              const change = data.price?.change || 0;
+              const changePercent = data.price?.change_percent || 0;
+              const isUp = change > 0;
+              const isDown = change < 0;
+              const colorClass = isUp ? 'badge-up' : isDown ? 'badge-down' : 'badge-neutral';
+              const sign = isUp ? '+' : '';
+
+              // Post 메타 배지 업데이트
+              element.className = `stock-badge stock-badge--post ${colorClass}`;
+              element.textContent = `${symbol} ${sign}${changePercent.toFixed(2)}%`;
+              element.classList.add('ticker-loaded');
+
+              console.log('[Stock Ticker] Post 메타 배지 업데이트 완료:', symbol);
+            }
+          })
+        );
+      }
+    });
+
+    await Promise.all(updatePromises);
+    console.log('[Stock Ticker] Post 메타 배지 업데이트 완료');
+  }
+
   // 모든 티커 업데이트
   async function updateAllTickers() {
     console.log('[Stock Ticker] 초기화 시작');
     const tickerElements = document.querySelectorAll('.stock-ticker');
     console.log('[Stock Ticker] 발견된 티커:', tickerElements.length);
-    
-    if (tickerElements.length === 0) {
-      console.log('[Stock Ticker] 티커가 없습니다');
-      return;
-    }
 
-    // instrument_id 수집
-    const instrumentIds = [];
-    const tickerDataMap = new Map();
+    // 모든 티커 요소 처리
+    const updatePromises = [];
 
     tickerElements.forEach(element => {
       const symbol = element.dataset.symbol;
       const exchange = element.dataset.exchange;
-      
-      console.log('[Stock Ticker] 처리 중:', symbol, exchange);
-      
+
+      console.log('[Stock Ticker] 처리 중:', symbol, 'Exchange:', exchange);
+
       // 1. data-instrument-id 속성에서 직접 가져오기 (우선순위)
       let instrumentId = element.dataset.instrumentId;
-      
-      // 2. 없으면 매핑 테이블에서 찾기 (fallback)
-      if (!instrumentId) {
-        instrumentId = TICKER_MAP[symbol];
-      }
-      
+
       if (instrumentId) {
-        console.log('[Stock Ticker] ID 매핑:', symbol, '->', instrumentId);
-        instrumentIds.push(instrumentId);
-        tickerDataMap.set(instrumentId, element);
+        // instrument_id가 있으면 바로 가격 조회
+        console.log('[Stock Ticker] ID 사용:', symbol, '->', instrumentId);
+        updatePromises.push(
+          fetchSingleStock(instrumentId).then(data => {
+            if (data) {
+              const badge = createBadge(data);
+              element.innerHTML = badge;
+              element.classList.add('ticker-loaded');
+            }
+          })
+        );
       } else {
-        console.warn('[Stock Ticker] ID 없음:', symbol);
+        // instrument_id가 없으면 검색 API로 동적 조회
+        console.log('[Stock Ticker] 종목 검색 필요:', symbol);
+        updatePromises.push(
+          searchInstrument(symbol).then(instrumentInfo => {
+            if (instrumentInfo && instrumentInfo.id) {
+              // 검색 성공 → 가격 조회
+              console.log('[Stock Ticker] 검색 성공, 가격 조회:', instrumentInfo.id);
+              return fetchSingleStock(instrumentInfo.id).then(data => {
+                if (data) {
+                  const badge = createBadge(data);
+                  element.innerHTML = badge;
+                  element.classList.add('ticker-loaded');
+                }
+              });
+            } else {
+              console.warn('[Stock Ticker] 검색 실패:', symbol);
+            }
+          })
+        );
       }
     });
 
-    if (instrumentIds.length === 0) {
-      console.log('[Stock Ticker] instrument ID가 없습니다');
-      return;
+    // 모든 업데이트 완료 대기
+    if (updatePromises.length > 0) {
+      await Promise.all(updatePromises);
     }
+    console.log('[Stock Ticker] 모든 티커 업데이트 완료');
 
-    console.log('[Stock Ticker] API 호출 중, IDs:', instrumentIds);
-    
-    // API 호출
-    const stockData = await fetchStockData(instrumentIds);
-    console.log('[Stock Ticker] API 응답:', stockData.length, '개');
+    // Post-Card 배지도 업데이트
+    await updateCardBadges();
 
-    // 각 티커 업데이트
-    stockData.forEach(data => {
-      const element = tickerDataMap.get(String(data.id));
-      if (element) {
-        const badge = createBadge(data);
-        // 원래 텍스트 제거하고 뱃지만 표시
-        element.innerHTML = badge;
-        element.classList.add('ticker-loaded');
-      }
-    });
+    // Post 메타 배지도 업데이트
+    await updatePostBadges();
   }
 
   // 페이지 로드 시 실행
