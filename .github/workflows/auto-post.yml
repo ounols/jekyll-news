@@ -38,12 +38,13 @@ jobs:
       - name: Run post generation
         run: |
           cd _pytools
-          python investing_complete_kr.py --limit 10
+          python investing_complete_kr.py --limit 10 || echo "Post generation failed with exit code $?"
 
-      - name: Run import script to download images
+      - name: Download and run import script
         run: |
+          curl -fsSL https://raw.githubusercontent.com/ounols/jekyll-news/main/import.sh -o import.sh
           chmod +x import.sh
-          ./import.sh _posts/*.md
+          ./import.sh "_posts/*.md"
 
       - name: Check for new posts
         id: check-posts

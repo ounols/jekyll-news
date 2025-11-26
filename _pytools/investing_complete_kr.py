@@ -108,7 +108,15 @@ class InvestingCompleteKR:
         """Bearer 토큰 추출 (개선된 버전)"""
         try:
             print("[INFO] Bearer 토큰 추출 중...")
-            response = self.scraper.get(f"{self.base_url}/news/latest-news", timeout=30)
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+            }
+            response = self.scraper.get(f"{self.base_url}/news/latest-news", headers=headers, timeout=30)
+
+            if response.status_code != 200:
+                print(f"[WARNING] 페이지 로드 실패 (HTTP {response.status_code})")
 
             # 방법 1: __NEXT_DATA__에서 accessToken 추출 (가장 확실한 방법)
             soup = BeautifulSoup(response.text, 'lxml')
@@ -173,15 +181,19 @@ class InvestingCompleteKR:
                 self.bearer_token = self.extract_bearer_token()
             
             print(f"\n[INFO] API 호출 중...")
-            
+
             headers = {
                 'Accept': 'application/json, text/plain, */*',
                 'Accept-Language': 'en-US,en;q=0.9,ko;q=0.8',
-                'Authorization': f'Bearer {self.bearer_token}' if self.bearer_token else '',
                 'Origin': 'https://www.investing.com',
                 'Referer': 'https://www.investing.com/',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             }
-            
+
+            # Bearer 토큰이 있을 때만 Authorization 헤더 추가
+            if self.bearer_token:
+                headers['Authorization'] = f'Bearer {self.bearer_token}'
+
             response = self.scraper.get(self.api_url, headers=headers, timeout=30)
             
             if response.status_code == 200:

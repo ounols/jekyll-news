@@ -10337,7 +10337,7 @@ table td {
 
   // Background image mode
   &--has-image {
-    background-image: linear-gradient(rgba(255, 255, 255, 0.5), rgba(200, 200, 200)), var(--bg-image);
+    background-image: linear-gradient(rgba(255, 255, 255, 0.5), rgba(200, 200, 200, 1)), var(--bg-image);
     background-size: cover !important;
     background-position: center !important;
 
